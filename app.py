@@ -12,19 +12,28 @@ app = Flask(__name__)
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        # Obtener los datos del formulario
-        ticker = request.form['ticker']
-        start_date = request.form['start_date']
-        end_date = request.form['end_date']
-
-        # Convertir start_date a datetime y calcular fecha un mes antes
-        start_dt = datetime.strptime(start_date, '%Y-%m-%d')
-        adjusted_start = (start_dt - relativedelta(months=1)).strftime('%Y-%m-%d')
-
         try:
+            # Obtener los datos del formulario
+            ticker = request.form['ticker']
+            start_date = request.form['start_date']
+            end_date = request.form['end_date']
+
+            # Convertir start_date a datetime y calcular fecha un mes antes
+            start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+            adjusted_start = (start_dt - relativedelta(months=1)).strftime('%Y-%m-%d')
+
             # Descargar los datos con el mes adicional
-            data = yf.download(ticker, start=adjusted_start,
-                             end=end_date, interval='1mo')
+            data = yf.download(ticker, start=adjusted_start, end=end_date, interval='1mo')
+            
+            if data.empty:
+                return render_template('index.html', error="No se encontraron datos para el ticker especificado")
+            
+            # Verificar las columnas disponibles
+            print("Columnas disponibles:", data.columns)
+            
+            # Asegurarse de que 'Adj Close' existe
+            if 'Adj Close' not in data.columns:
+                return render_template('index.html', error="Error: No se encontró la columna 'Adj Close' en los datos")
 
             # Verificar que los datos hayan sido descargados correctamente
             if data.empty:
